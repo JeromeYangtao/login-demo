@@ -2,7 +2,6 @@ var http = require('http')
 var fs = require('fs')
 var url = require('url')
 
-//console.log(Object.keys(http))
 var port = process.env.PORT || 8888;
 
 var server = http.createServer(function(request, response) {
@@ -19,71 +18,23 @@ var server = http.createServer(function(request, response) {
         response.setHeader('Content-Type', 'text/html;charset=utf-8')
         response.end(string)
     } else if (path === '/signUp' && method === 'POST') {
-        getPostData(request, function(postData) {
-
-            let errors = checkPostData(postData)
-            if (Object.keys(errors).length === 0) {
-                let { email, password } = postData
-                let user = {
-                        email: email,
-                        passwordHash: frankHash(password) // 永远不要使用 MDN5，永远不要自己发明加密算法
-                    }
-                    // 写数据库
-                let dbString = fs.readFileSync('./db.json', 'utf-8')
-                let dbObject = JSON.parse(dbString)
-                dbObject.users.push(user)
-                let dbString2 = JSON.stringify(dbObject)
-                fs.writeFileSync('./db.json', dbString2, { encoding: 'utf-8' })
-            } else {
-                response.statusCode = 400
-            }
-            response.setHeader('Content-Type', 'text/html;charset=utf-8')
-            response.end(JSON.stringify(errors)) // 运行在node.js
-        })
-    } else if (path === '/node_modules/jquery/dist/jquery.min.js') {
-        let string = fs.readFileSync('./node_modules/jquery/dist/jquery.min.js')
+        response.setHeader('Content-Type', 'text/html;charset=utf-8')
+        response.end('注册成功')
+    } else if (path === '/jquery-3.1.1.min.js') {
+        let string = fs.readFileSync('./jquery-3.1.1.min.js')
         response.setHeader('Content-Type', 'application/javascript;charset=utf-8')
         response.end(string)
     } else if (path === '/main.js') {
         let string = fs.readFileSync('./main.js')
         response.setHeader('Content-Type', 'application/javascript;charset=utf-8')
         response.end(string)
-    } else if (path === '/home') {
-        var cookies = parseCookies(request.headers.cookie);
+    } else if (path === '/home.html') {
+        let string = fs.readFileSync('./home.html')
         response.setHeader('Content-Type', 'text/html;charset=utf-8')
-        if (cookies.logined === 'true') {
-            response.end(`${cookies.user_id}已登录`)
-        } else {
-            let string = fs.readFileSync('./home')
-            response.end(string)
-        }
+        response.end(string)
     } else if (path === '/login' && method === 'POST') {
-        // 读数据库
-        getPostData(request, (postData) => {
-            let dbString = fs.readFileSync('./db.json', 'utf-8')
-            let dbObject = JSON.parse(dbString)
-            let users = dbObject.users
-
-            let { email, password } = postData
-            let found
-            for (var i = 0; i < users.length; i++) {
-                if (users[i].email === email && users[i].passwordHash === frankHash(password)) {
-                    found = users[i]
-                    break
-                }
-            }
-            if (found) {
-                // 标记该用户登录了 
-                response.setHeader('Set-Cookie', ['logined=true; expires=1000; path=/;', 'user_id=' + email + '; expires=123456789; path=/;'])
-                response.end('')
-            } else {
-                response.statusCode = 400
-                let errors = { email: '没有注册或密码错误' }
-                response.setHeader('Content-Type', 'text/html;charset=utf-8')
-                response.end(JSON.stringify(errors))
-            }
-
-        })
+        response.setHeader('Content-Type', 'text/html;charset=utf-8')
+        response.end('登陆成功')
     } else {
         response.statusCode = 404
         response.setHeader('Content-Type', 'text/html;charset=utf-8')
@@ -94,42 +45,7 @@ var server = http.createServer(function(request, response) {
     console.log(method + ' ' + request.url)
 })
 
-function getPostData(request, callback) {
-    data = ''
-    request.on('data', (postData) => {
-        data += postData.toString()
-    })
 
-    request.on('end', () => {
-        let array = data.split('&')
-        let postData = {}
-        for (var i = 0; i < array.length; i++) {
-            let parts = array[i].split('=')
-            let key = decodeURIComponent(parts[0])
-            let value = decodeURIComponent(parts[1])
-            postData[key] = value
-        }
-        callback.call(null, postData)
-    })
-}
-
-function checkPostData(postData) {
-    let { email, password, password_confirmation } = postData
-    let errors = {}
-        // check email
-    if (email.indexOf('@') <= 0) {
-        errors.email = '邮箱不合法'
-    }
-    if (password.length < 6) {
-        errors.password = '密码太短'
-    }
-
-    if (password_confirmation !== password) {
-        errors.password_confirmation = '两次输入密码不匹配'
-    }
-
-    return errors
-}
 
 function frankHash(string) {
     return 'frank' + string + 'frank'
